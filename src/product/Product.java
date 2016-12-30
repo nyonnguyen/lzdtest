@@ -1,3 +1,4 @@
+package product;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -19,6 +20,14 @@ public class Product {
 			data = new ProductDetail();
 		}
 		return this.data;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public void setData(ProductDetail data) {
+		this.data = data;
 	}
 
 }
