@@ -10,6 +10,7 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,28 +19,50 @@ import org.apache.commons.lang.StringEscapeUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import brand.*;
+
 
 public class Test {
 	
+	private static final String baseUrl = "http://www.lazada.vn/mobapi/";
+	
+	private static final String allproducts = "http://www.lazada.vn/mobapi/search/find/all-products/";
+	
+	private static final String brands = "http://www.lazada.vn/mobapi/brands/";
+	
 	private static final String usstore = "http://www.lazada.vn/mobapi/usa-store/";
 
-	private static final String allproducts = "http://www.lazada.vn/mobapi/search/find/all-products/";
-	private static final String brands = "http://www.lazada.vn/mobapi/brands/";
+	private static final String testlink = "http://www.lazada.vn/mobapi/samsung/";
+	
 	private static String page = "?page=";
 	
 	private static PrintWriter outputStream = null;
 	
 	private static final String fileName = "precious.txt";
 	
+	private static String brandName;
+	
+	private static final DecimalFormat priceFormat = new DecimalFormat("###,###.###");
+	
 	public static void main(String[] args) {
-		
-		Double percentage = Double.parseDouble(args[0]);
 
+		brandName = args[0];
+		double percentage = Double.parseDouble(args[1]);
+		boolean isWriteFile = Boolean.valueOf(args[2]);
+		boolean isHidePageNum = Boolean.valueOf(args[3]);
 		
-		Result firstPage = getData(0).getResult();
+		// print to file
+		prepareFile(brandName, true);
 		
-		
-//		products = result.getProducts();
+		// list products
+		processProduct(baseUrl + brandName, percentage, isHidePageNum, isWriteFile);
+	
+		// list brands
+//		getListBrandName();
+	}
+	
+	public static void processProduct(String link, double lookupPercentage, boolean isHidePageNum, boolean isWriteFile) {
+		Result firstPage = getProductResponse(link, 0).getResult();
 		
 		Double numberPage = Double.parseDouble(firstPage.getProductCount())/10;
 		
@@ -47,57 +70,105 @@ public class Test {
 		
 		System.out.println("Number of page: " + intNumbPage);
 		
-		// get 1st list
-//		products.addAll(firstPage.getProducts());
-		
-//		prepareFile(fileName);
+		List<Product> listProducts = new ArrayList<Product>();
 		
 		for (int i=1; i<=intNumbPage; i++) {
-			System.out.println("Getting " + i + "...");
+			if (!isHidePageNum) {
+				System.out.println("Getting " + i + "/" + intNumbPage);
+			}
+			listProducts = getProductResponse(link, i).getResult().getProducts();
 			
-//			printFile(getData(i).getResult().getProducts(), percentage);
-			printOut(getData(i).getResult().getProducts(), percentage);
+			printOut(listProducts, lookupPercentage);
 			
-			System.out.println("===> Done");
+			if (isWriteFile) {
+				printFile(listProducts, lookupPercentage);
+			}
+		}
+	}
+	
+	public static List<Brand> getListBrandName() {
+		List<Brand> listBrand = getBrandResponse(brands, 0).getMetadata().getData();
+		
+		for (Brand brand : listBrand) {
+			System.out.println(brand.getBrand().getApi_url() + "\t" + brand.getBrand().getProduct_count());
 		}
 		
-//		System.out.println(products.size());
-		
-	
+		return listBrand;
 	}
 	
-	public static void prepareFile(String fileName) {
+	public static BrandResponse getBrandResponse(String link, int pageNum) {
+		BrandResponse br = null;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			String surfix = "";
+			if (pageNum != 0)
+				surfix = page + Integer.toString(pageNum);
+				
+			br = mapper.readValue(loadProductList(link+surfix), BrandResponse.class);
+			
+		} catch (Exception e) {
+			System.out.println("Failed to map data: " + e.toString());
+		}
+		return br;
+	}
+	
+	
+	public static void prepareFile(String fileName, boolean isNew) {
 		try{
-            outputStream = new PrintWriter( new FileOutputStream(fileName, true));
+			if (isNew) {
+				outputStream = new PrintWriter( new FileOutputStream(fileName+".txt"));
+			} else {
+	            outputStream = new PrintWriter( new FileOutputStream(fileName+".txt", true));				
+			}
+
         }
         catch (Exception e){
-            System.out.println("Error opening the file precious.txt.");
+            System.out.println("Error opening the file " + fileName + ".txt.");
             System.exit(0);
         }
-	}
+	}	
 	
 	public static void printFile(List<Product> products, double percentage) {
 		
 		for (Product product : products) {
+			
 			ProductDetail pd = product.getData();
+			
+//			String abc = pd.getMax_saving_percentage();
+//			System.out.println("==================== "+abc+" ====" + (Double.parseDouble(pd.getMax_price()) - Double.parseDouble(pd.getMax_special_price())));
+			
 			if (Double.parseDouble(pd.getMax_saving_percentage()) > percentage) {
-				String result = pd.getMax_saving_percentage() + "\t" + pd.getName() + "\t\t\t" + pd.getSpecial_price();
-				System.out.println(result);
+				
+				// print to file
+				prepareFile(brandName, false);
+				
+				String result = "";
+				try {
+					result = pd.getMax_saving_percentage() + "%\t" + pd.getName() + "\t\t\t" + priceFormat.format(Double.parseDouble(pd.getSpecial_price()));
+				} catch (Exception e) {
+					result = pd.getMax_saving_percentage() + "%\t" + pd.getName() + "\t\t\t" + priceFormat.format(Double.parseDouble(pd.getPrice()));
+				}
+//				System.out.println(result);
 				outputStream.println(result);
+				outputStream.close();
 			}
 		}
 	}
 	
 	public static void printOut(List<Product> products, double percentage) {
+		
 		for (Product product : products) {
 			ProductDetail pd = product.getData();
 			if (Double.parseDouble(pd.getMax_saving_percentage()) > percentage)
-			
-			System.out.println( pd.getMax_saving_percentage() + "\t" + pd.getName() + "\t\t\t" + pd.getSpecial_price() );
+			try {
+				System.out.println( pd.getMax_saving_percentage() + "%\t" + pd.getName() + "\t\t\t" + priceFormat.format(Double.parseDouble(pd.getSpecial_price())) );
+			} catch (Exception e) {
+				System.out.println( pd.getMax_saving_percentage() + "%\t" + pd.getName() + "\t\t\t" + priceFormat.format(Double.parseDouble(pd.getPrice())) );
+			}
 		}
 	}
 	
-	public static ProductResponse getData(int pageNum) {
+	public static ProductResponse getProductResponse(String link, int pageNum) {
 		ProductResponse pr = null;
 		try {
 //			FileReader fr = new FileReader(file);
@@ -107,7 +178,7 @@ public class Test {
 			if (pageNum != 0)
 				surfix = page + Integer.toString(pageNum);
 				
-			pr = mapper.readValue(loadProductList(allproducts+surfix), ProductResponse.class);
+			pr = mapper.readValue(loadProductList(link+surfix), ProductResponse.class);
 			
 		} catch (Exception e) {
 			System.out.println("Failed to map data: " + e.toString());
