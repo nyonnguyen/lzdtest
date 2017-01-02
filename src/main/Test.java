@@ -26,36 +26,41 @@ public class Test {
 	
 	private static final String baseUrl = "http://www.lazada.vn/mobapi/";
 	
+	private static final String searchUrl = "http://www.lazada.vn/mobapi/search/?q=xiaomi&price=254600-372345&rating=1-3";
+	
 	private static final String allproducts = "http://www.lazada.vn/mobapi/search/find/all-products/";
+	
+	private static final String categories = "http://www.lazada.vn/mobapi/catalog/categories/";
 	
 	private static final String brands = "http://www.lazada.vn/mobapi/brands/";
 	
-	private static final String usstore = "http://www.lazada.vn/mobapi/usa-store/";
-
-	private static final String testlink = "http://www.lazada.vn/mobapi/samsung/";
+	// appending tags
+	private static final String priceTag = "&price=";	// ex: 123-456
+	private static final String ratingTag = "&rating=";	// ex: 1-5
+	private static String pageTag = "?page="; // 5
 	
-	private static String page = "?page=";
+	
 	
 	private static PrintWriter outputStream = null;
 	
-	private static final String fileName = "precious.txt";
-	
-	private static String brandName;
+	private static String linkValue;
 	
 	private static final DecimalFormat priceFormat = new DecimalFormat("###,###.###");
 	
 	public static void main(String[] args) {
 
-		brandName = args[0];
-		double percentage = Double.parseDouble(args[1]);
-		boolean isWriteFile = Boolean.valueOf(args[2]);
-		boolean isHidePageNum = Boolean.valueOf(args[3]);
+		// app <option> <>
+		
+		linkValue = args[1];
+		double percentage = Double.parseDouble(args[2]);
+		boolean isWriteFile = Boolean.valueOf(args[3]);
+		boolean isHidePageNum = Boolean.valueOf(args[4]);
 		
 		// print to file
-		prepareFile(brandName, true);
+		prepareFile(linkValue, true);
 		
 		// list products
-		processProduct(baseUrl + brandName, percentage, isHidePageNum, isWriteFile);
+		processProduct(baseUrl + linkValue, percentage, isHidePageNum, isWriteFile);
 	
 		// list brands
 //		getListBrandName();
@@ -102,7 +107,7 @@ public class Test {
 			ObjectMapper mapper = new ObjectMapper();
 			String surfix = "";
 			if (pageNum != 0)
-				surfix = page + Integer.toString(pageNum);
+				surfix = pageTag + Integer.toString(pageNum);
 				
 			br = mapper.readValue(loadProductList(link+surfix), BrandResponse.class);
 			
@@ -140,7 +145,7 @@ public class Test {
 			if (Double.parseDouble(pd.getMax_saving_percentage()) > percentage) {
 				
 				// print to file
-				prepareFile(brandName, false);
+				prepareFile(linkValue, false);
 				
 				String result = "";
 				try {
@@ -161,9 +166,9 @@ public class Test {
 			ProductDetail pd = product.getData();
 			if (Double.parseDouble(pd.getMax_saving_percentage()) > percentage)
 			try {
-				System.out.println( pd.getMax_saving_percentage() + "%\t" + pd.getName() + "\t\t\t" + priceFormat.format(Double.parseDouble(pd.getSpecial_price())) );
+				System.out.printf( "%s%% $2%s %s \n", pd.getMax_saving_percentage(), pd.getName(), priceFormat.format(Double.parseDouble(pd.getSpecial_price())) );
 			} catch (Exception e) {
-				System.out.println( pd.getMax_saving_percentage() + "%\t" + pd.getName() + "\t\t\t" + priceFormat.format(Double.parseDouble(pd.getPrice())) );
+				System.out.printf( "%s%% %s %s \n", pd.getMax_saving_percentage(), pd.getName(), priceFormat.format(Double.parseDouble(pd.getPrice())) );
 			}
 		}
 	}
@@ -176,7 +181,7 @@ public class Test {
 //			pr = mapper.readValue(fr, ProductResponse.class);
 			String surfix = "";
 			if (pageNum != 0)
-				surfix = page + Integer.toString(pageNum);
+				surfix = pageTag + Integer.toString(pageNum);
 				
 			pr = mapper.readValue(loadProductList(link+surfix), ProductResponse.class);
 			
