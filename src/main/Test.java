@@ -51,10 +51,10 @@ public class Test {
 
 		// app <option> <>
 		
-		linkValue = args[1];
-		double percentage = Double.parseDouble(args[2]);
-		boolean isWriteFile = Boolean.valueOf(args[3]);
-		boolean isHidePageNum = Boolean.valueOf(args[4]);
+		linkValue = args[0];
+		double percentage = Double.parseDouble(args[1]);
+		boolean isWriteFile = Boolean.valueOf(args[2]);
+		boolean isHidePageNum = Boolean.valueOf(args[3]);
 		
 		// print to file
 		prepareFile(linkValue, true);
@@ -199,6 +199,8 @@ public class Test {
 			HttpURLConnection request = (HttpURLConnection) url.openConnection();
 			request.connect();
 
+//			System.out.println(request.getResponseMessage());
+			
 			inputR = new InputStreamReader((InputStream) request.getContent());
 
 		} catch (Exception e) {
