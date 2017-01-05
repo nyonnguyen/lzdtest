@@ -8,7 +8,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -45,16 +48,24 @@ public class Test {
 	
 	private static String linkValue;
 	
+	static String proxyInfo;
+	
 	private static final DecimalFormat priceFormat = new DecimalFormat("###,###.###");
 	
 	public static void main(String[] args) {
 
 		// app <option> <>
 		
-		linkValue = args[1];
-		double percentage = Double.parseDouble(args[2]);
-		boolean isWriteFile = Boolean.valueOf(args[3]);
-		boolean isHidePageNum = Boolean.valueOf(args[4]);
+		linkValue = args[0];
+		double percentage = Double.parseDouble(args[1]);
+		boolean isWriteFile = Boolean.valueOf(args[2]);
+		boolean isHidePageNum = Boolean.valueOf(args[3]);
+		try {
+			proxyInfo = args[4];
+		} catch (Exception e) {
+			proxyInfo = "";
+		}
+		 
 		
 		// print to file
 		prepareFile(linkValue, true);
@@ -109,7 +120,7 @@ public class Test {
 			if (pageNum != 0)
 				surfix = pageTag + Integer.toString(pageNum);
 				
-			br = mapper.readValue(loadProductList(link+surfix), BrandResponse.class);
+			br = mapper.readValue(loadProductList(link+surfix, proxyInfo), BrandResponse.class);
 			
 		} catch (Exception e) {
 			System.out.println("Failed to map data: " + e.toString());
@@ -120,6 +131,11 @@ public class Test {
 	
 	public static void prepareFile(String fileName, boolean isNew) {
 		try{
+			
+			if (fileName.contains("/")) {
+				fileName = fileName.replace("/", "-");
+			}
+			
 			if (isNew) {
 				outputStream = new PrintWriter( new FileOutputStream(fileName+".txt"));
 			} else {
@@ -149,9 +165,9 @@ public class Test {
 				
 				String result = "";
 				try {
-					result = pd.getMax_saving_percentage() + "%\t" + pd.getName() + "\t\t\t" + priceFormat.format(Double.parseDouble(pd.getSpecial_price()));
+					result = String.format("%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(), pd.getSku(), priceFormat.format(Double.parseDouble(pd.getSpecial_price())));
 				} catch (Exception e) {
-					result = pd.getMax_saving_percentage() + "%\t" + pd.getName() + "\t\t\t" + priceFormat.format(Double.parseDouble(pd.getPrice()));
+					result = String.format("%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(), pd.getSku(), priceFormat.format(Double.parseDouble(pd.getPrice())));
 				}
 //				System.out.println(result);
 				outputStream.println(result);
@@ -166,9 +182,9 @@ public class Test {
 			ProductDetail pd = product.getData();
 			if (Double.parseDouble(pd.getMax_saving_percentage()) > percentage)
 			try {
-				System.out.printf( "%s%% $2%s %s \n", pd.getMax_saving_percentage(), pd.getName(), priceFormat.format(Double.parseDouble(pd.getSpecial_price())) );
+				System.out.printf( "%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(), pd.getSku(), priceFormat.format(Double.parseDouble(pd.getSpecial_price())) );
 			} catch (Exception e) {
-				System.out.printf( "%s%% %s %s \n", pd.getMax_saving_percentage(), pd.getName(), priceFormat.format(Double.parseDouble(pd.getPrice())) );
+				System.out.printf( "%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(), pd.getSku(), priceFormat.format(Double.parseDouble(pd.getPrice())) );
 			}
 		}
 	}
@@ -183,7 +199,7 @@ public class Test {
 			if (pageNum != 0)
 				surfix = pageTag + Integer.toString(pageNum);
 				
-			pr = mapper.readValue(loadProductList(link+surfix), ProductResponse.class);
+			pr = mapper.readValue(loadProductList(link+surfix, proxyInfo), ProductResponse.class);
 			
 		} catch (Exception e) {
 			System.out.println("Failed to map data: " + e.toString());
@@ -192,13 +208,30 @@ public class Test {
 	}
 	
 	
-	public static InputStreamReader loadProductList(String link) {
+	public static InputStreamReader loadProductList(String link, String proxyInfo) {
 		InputStreamReader inputR = null;
 		try {
+			
 			URL url = new URL(link);
-			HttpURLConnection request = (HttpURLConnection) url.openConnection();
-			request.connect();
+			HttpURLConnection request = null;
+			
+			if (!proxyInfo.isEmpty()) {
+				String[] proxyInfoExtracted = proxyInfo.split(":");
 
+				String address = proxyInfoExtracted[0];
+				String port = proxyInfoExtracted[1];
+
+				Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(address, Integer.parseInt(port)));
+				request = (HttpURLConnection) url.openConnection(proxy);
+			} else {
+				request = (HttpURLConnection) url.openConnection();
+			}
+			
+			request.connect();
+			
+//			System.out.println(request.getResponseCode());
+//			System.out.println(request.toString());
+			
 			inputR = new InputStreamReader((InputStream) request.getContent());
 
 		} catch (Exception e) {
