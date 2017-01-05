@@ -60,12 +60,12 @@ public class Test {
 		double percentage = Double.parseDouble(args[1]);
 		boolean isWriteFile = Boolean.valueOf(args[2]);
 		boolean isHidePageNum = Boolean.valueOf(args[3]);
+
 		try {
 			proxyInfo = args[4];
 		} catch (Exception e) {
 			proxyInfo = "";
 		}
-		 
 		
 		// print to file
 		prepareFile(linkValue, true);
