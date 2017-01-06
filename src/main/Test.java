@@ -69,6 +69,7 @@ public class Test {
 
 		} catch (Exception e) {
 			showUsage();
+			System.out.println(e.toString());
 		}
 	}
 
@@ -141,20 +142,25 @@ public class Test {
 
 	public static void printOut(List<Product> products, double percentage, boolean isWriteFile) {
 
-		for (Product product : products) {
-			ProductDetail pd = product.getData();
-			if (Double.parseDouble(pd.getMax_saving_percentage()) >= percentage) {
-				String result = "";
-				try {		
-					result = String.format("%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(),
-							pd.getSku(), priceFormat.format(Double.parseDouble(pd.getSpecial_price())));
-	
-				} catch (Exception e) {
-					result = String.format("%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(),
-							pd.getSku(), priceFormat.format(Double.parseDouble(pd.getPrice())));
+		try {
+			for (Product product : products) {
+				ProductDetail pd = product.getData();
+				if (Double.parseDouble(pd.getMax_saving_percentage()) >= percentage) {
+					String result = "";
+					try {
+						result = String.format("%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(),
+								pd.getSku(), priceFormat.format(Double.parseDouble(pd.getSpecial_price())));
+
+					} catch (Exception e) {
+						System.out.println("Not found Special Price!!!");
+						result = String.format("%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(),
+								pd.getSku(), priceFormat.format(Double.parseDouble(pd.getPrice())));
+					}
+					writeAndPrint(result, isWriteFile);
 				}
-				writeAndPrint(result, isWriteFile);
 			}
+		} catch (Exception e) {
+			System.out.println("Failed to print out: " + e.toString());
 		}
 	}
 
@@ -163,12 +169,12 @@ public class Test {
 			// print to file
 			prepareFile(linkValue, false);
 			
-			System.out.printf(value);
+			System.out.print(value);
 			
 			outputStream.println(value);
 			outputStream.close();
 		} else {
-			System.out.printf(value);
+			System.out.print(value);
 		}
 	}
 	
