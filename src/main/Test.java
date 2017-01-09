@@ -155,6 +155,11 @@ public class Test {
 				switch (filter) {
 				case PRICE:
 					if (Double.parseDouble(pd.getPrice()) <= threshold) {
+						System.out.println("price: " + pd.getPrice());
+						System.out.println("max price: " + pd.getMax_price());
+						System.out.println("max special price: " + pd.getMax_special_price());
+						System.out.println("special price:" + pd.getSpecial_price());
+						System.out.println("Original price:" + pd.getOriginal_price());
 						result = pd.toString();
 					}
 					break;
@@ -242,7 +247,7 @@ public class Test {
 
 	public static void showUsage() {
 		System.out.println(
-				"# java -jar lzdtest.jar <directory> <discount_percentage> <is_write_output_to_file> <is_showing_page> <proxy:port>");
+				"# java -jar lzdtest.jar <directory> <discount_percentage> <is_write_output_to_file> <is_showing_page> [proxy:port]");
 
 		System.out.println("Example:");
 

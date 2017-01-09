@@ -13,12 +13,24 @@ public class ProductDetail {
 	private String url;
 	private String description;
 	private String branch;
-	private String max_price;
+	private String original_price;
 	private String price;
+	private String max_price;
 	private String max_special_price;
 	private String special_price;
 	private String max_saving_percentage;
 	private String is_fast_deliver;
+	
+	
+	public String getOriginal_price() {
+		return original_price;
+	}
+	public void setOriginal_price(String original_price) {
+		this.original_price = original_price;
+	}
+	public static DecimalFormat getPriceformat() {
+		return priceFormat;
+	}
 	public String getSku() {
 		return sku;
 	}
@@ -94,8 +106,14 @@ public class ProductDetail {
 
 		} catch (Exception e) {
 			System.out.println("Not found Special Price!!!");
+			try {
 			result = String.format("%s%% \t %s \t %s \t %s \n", getMax_saving_percentage(), getName(),
 					getSku(), priceFormat.format(Double.parseDouble(getPrice())));
+			} catch (Exception f) {
+				System.out.println("Not found Price!!!");
+				result = String.format("%s%% \t %s \t %s \t %s \n", getMax_saving_percentage(), getName(),
+						getSku(), priceFormat.format(Double.parseDouble(getMax_price())));
+			}
 		}
 		return result;
 	}
