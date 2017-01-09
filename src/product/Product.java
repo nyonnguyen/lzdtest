@@ -29,5 +29,5 @@ public class Product {
 	public void setData(ProductDetail data) {
 		this.data = data;
 	}
-
+	
 }

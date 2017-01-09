@@ -1,9 +1,13 @@
 package product;
+import java.text.DecimalFormat;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ProductDetail {
 
+	private static final DecimalFormat priceFormat = new DecimalFormat("###,###.###");
+	
 	private String sku;
 	private String name;
 	private String url;
@@ -82,6 +86,18 @@ public class ProductDetail {
 		this.is_fast_deliver = is_fast_deliver;
 	}
 	
-	
+	public String toString() {
+		String result = "";
+		try {
+			result = String.format("%s%% \t %s \t %s \t %s \n", getMax_saving_percentage(), getName(),
+					getSku(), priceFormat.format(Double.parseDouble(getSpecial_price())));
+
+		} catch (Exception e) {
+			System.out.println("Not found Special Price!!!");
+			result = String.format("%s%% \t %s \t %s \t %s \n", getMax_saving_percentage(), getName(),
+					getSku(), priceFormat.format(Double.parseDouble(getPrice())));
+		}
+		return result;
+	}
 	
 }

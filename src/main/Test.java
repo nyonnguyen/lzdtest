@@ -41,19 +41,18 @@ public class Test {
 
 	static String proxyInfo;
 
-	private static final DecimalFormat priceFormat = new DecimalFormat("###,###.###");
-
 	public static void main(String[] args) {
 
 		// app <option> <>
 		try {
 			linkValue = args[0];
-			double percentage = Double.parseDouble(args[1]);
-			boolean isWriteFile = Boolean.valueOf(args[2]);
-			boolean isHidePageNum = Boolean.valueOf(args[3]);
+			double threshold = Double.parseDouble(args[1]);
+			boolean isPrice = Boolean.valueOf(args[2]);
+			boolean isWriteFile = Boolean.valueOf(args[3]);
+			boolean isHidePageNum = Boolean.valueOf(args[4]);
 
 			try {
-				proxyInfo = args[4];
+				proxyInfo = args[5];
 			} catch (Exception e) {
 				proxyInfo = "";
 			}
@@ -62,7 +61,7 @@ public class Test {
 			prepareFile(linkValue, true);
 
 			// list products
-			processProduct(baseUrl + linkValue, percentage, isHidePageNum, isWriteFile);
+			processProduct(baseUrl + linkValue, threshold, isPrice, isHidePageNum, isWriteFile);
 
 			// list brands
 			// getListBrandName();
@@ -73,7 +72,7 @@ public class Test {
 		}
 	}
 
-	public static void processProduct(String link, double lookupPercentage, boolean isHidePageNum,
+	public static void processProduct(String link, double lookupPercentage, boolean isPrice, boolean isHidePageNum,
 			boolean isWriteFile) {
 		Result firstPage = getProductResponse(link, 0).getResult();
 
@@ -91,7 +90,12 @@ public class Test {
 			}
 			listProducts = getProductResponse(link, i).getResult().getProducts();
 
-			printOut(listProducts, lookupPercentage, isWriteFile);
+			if (isPrice) {
+				printOut(listProducts, lookupPercentage, Filter.PRICE, isWriteFile);
+			} else {
+				printOut(listProducts, lookupPercentage, Filter.PERCENTAGE, isWriteFile);
+			}
+			
 		}
 	}
 
@@ -140,30 +144,37 @@ public class Test {
 		}
 	}
 
-	public static void printOut(List<Product> products, double percentage, boolean isWriteFile) {
+	public static void printOut(List<Product> products, double threshold, Filter filter, boolean isWriteFile) {
 
 		try {
 			for (Product product : products) {
 				ProductDetail pd = product.getData();
-				if (Double.parseDouble(pd.getMax_saving_percentage()) >= percentage) {
-					String result = "";
-					try {
-						result = String.format("%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(),
-								pd.getSku(), priceFormat.format(Double.parseDouble(pd.getSpecial_price())));
-
-					} catch (Exception e) {
-						System.out.println("Not found Special Price!!!");
-						result = String.format("%s%% \t %s \t %s \t %s \n", pd.getMax_saving_percentage(), pd.getName(),
-								pd.getSku(), priceFormat.format(Double.parseDouble(pd.getPrice())));
+				
+				String result = "";
+				
+				switch (filter) {
+				case PRICE:
+					if (Double.parseDouble(pd.getPrice()) <= threshold) {
+						result = pd.toString();
 					}
-					writeAndPrint(result, isWriteFile);
+					break;
+				case PERCENTAGE:
+					if (Double.parseDouble(pd.getMax_saving_percentage()) >= threshold) {
+						result = pd.toString();
+					}
+					break;
+
+				default:
+					break;
 				}
+				
+				writeAndPrint(result, isWriteFile);
 			}
 		} catch (Exception e) {
 			System.out.println("Failed to print out: " + e.toString());
 		}
 	}
-
+	
 	private static void writeAndPrint(String value, boolean isWrite) {
 		if (isWrite) {
 			// print to file
@@ -191,7 +202,8 @@ public class Test {
 			pr = mapper.readValue(loadProductList(link + surfix, proxyInfo), ProductResponse.class);
 
 		} catch (Exception e) {
-			System.out.println("Failed to map data: " + e.toString());
+//			System.out.println("Failed to map data: " + e.toString());
+			System.out.println("Input link responses NO product.");
 		}
 		return pr;
 	}
@@ -223,7 +235,7 @@ public class Test {
 			inputR = new InputStreamReader((InputStream) request.getContent());
 
 		} catch (Exception e) {
-			System.out.println("Failed to connect server: " + e.toString());
+			System.out.println("Failed to connect server OR Bad input link");
 		}
 		return inputR;
 	}
